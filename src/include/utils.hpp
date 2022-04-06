@@ -65,6 +65,9 @@ namespace pnt_cli::utils {
         ss << "}" << '\n';
         return ss.str();
     }
+
+    template<typename T>
+    concept StringLike = std::is_convertible_v<T, std::string_view>;
 } // namespace pnt_cli::utils
 
 #endif // UTILS_HPP_

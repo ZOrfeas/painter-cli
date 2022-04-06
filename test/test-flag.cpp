@@ -21,20 +21,23 @@ Hostname pnt_cli::fromString<Hostname>(const std::string& str) {
     };
 }
 
-// template<>
-// std::string pnt_cli::toString<Hostname>(const Hostname& val) {
-//     return val.name + ":" + std::to_string(val.port);
-// }
+template<>
+std::string pnt_cli::toString<Hostname>(const Hostname& val) {
+    return val.name + ":" + std::to_string(val.port);
+}
 
 
 int main() {
     using namespace pnt_cli;
     using namespace std;
+    log_m("Starting flag.hpp tests");
 
     static_assert(FlagType<int>);
     static_assert(FlagType<float>);
     static_assert(FlagType<std::string>);
     static_assert(FlagType<bool>);
+    
+    static_assert(FlagType<Hostname>);
 
     FlagSet fs;
     test_pred("Should be empty", fs.empty);

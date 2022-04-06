@@ -27,19 +27,21 @@ namespace pnt_cli {
     template<typename T>
     concept FlagType = requires (T t, const std::string& s) {
         { pnt_cli::fromString<T>(s) } -> std::same_as<T>;
+        { pnt_cli::toString<T>(t) } -> std::same_as<std::string>;
     };
+
     
     template<std::integral T> T fromString(const std::string& str) { return std::stoi(str); }
-    // template<std::integral T> std::string toString(const T& val) {return std::to_string(val); }
+    template<std::integral T> std::string toString(const T& val) {return std::to_string(val); }
 
     template<std::floating_point T> T fromString(const std::string& str) { return std::stof(str); }
-    // template<std::floating_point T> std::string toString(const T& val) {return std::to_string(val); }
+    template<std::floating_point T> std::string toString(const T& val) {return std::to_string(val); }
 
     template<> std::string fromString<std::string>(const std::string& str) { return str; }
-    // template<> std::string toString<std::string>(const std::string& val) { return val; }
+    template<> std::string toString<std::string>(const std::string& val) { return val; }
 
-    template<> bool fromString<bool>(const std::string& str) { error_m("Function not needed"); }
-    // template<> std::string toString<bool>(const bool& val) { return val ? "true" : "false"; }
+    template<> bool fromString<bool>(const std::string& str) { return "true" == str ? true : false; }
+    template<> std::string toString<bool>(const bool& val) { return val ? "true" : "false"; }
 
     class Flag {
         private:
@@ -51,20 +53,19 @@ namespace pnt_cli {
             Flag(std::string name, std::string shorthand, std::string description, utils::type_id_t type_id_val)
                 : name_(name), shorthand_(shorthand), description_(description), type_id_(type_id_val) {}
         public:
+            virtual void set(const std::string& str) = 0;
             /**
              * @brief Check if the flag type matches the function template argument type.
              * 
              * @tparam T Type to check against
              * @return true if matches
              */
-            template<FlagType T> bool typeMatches() { return utils::type_id<T>() == type_id_;}
-
+            template<FlagType T> bool typeMatches() const { return utils::type_id<T>() == type_id_;}
             // overload stream operator for printing
             friend std::ostream& operator<<(std::ostream& os, const Flag& f) {
                 os << "{" <<  f.name_ << " (" << f.shorthand_ << ") " << f.description_ << "}";
                 return os;
             }
-
             Flag() = delete;
             virtual ~Flag() = default;
 
@@ -73,11 +74,15 @@ namespace pnt_cli {
     template<FlagType T>
     class FlagImpl : public Flag {
         private:
-        public:
             T value;
+        public:
             FlagImpl() = delete;
             FlagImpl(std::string name, std::string shorthand, std::string description, T defaultVal) 
                 : Flag(name, shorthand, description, utils::type_id<T>()), value(defaultVal) {};
+            void set(const std::string& str) override {
+                value = fromString<T>(str);
+            }
+            T get() const { return value; }
             ~FlagImpl() = default;    
     };
 
@@ -107,7 +112,7 @@ namespace pnt_cli {
              * @param name the name to check for
              * @return Flag* to the flag if found, nullptr otherwise
              */
-            Flag* find_in_either_map(const std::string& name) {
+            Flag* find_in_either_map(const std::string& name) const {
                 Flag* f;
                 if (name.length() == 2) { f = find_in_map(shorthands_, name); } 
                 else { f = find_in_map(flags_, name); }
@@ -117,8 +122,8 @@ namespace pnt_cli {
             FlagSet() = default;            
             ~FlagSet() = default;
 
-            bool empty() { return flags_.empty(); }
-            size_t size() { return flags_.size(); }
+            bool empty() const { return flags_.empty(); }
+            size_t size() const { return flags_.size(); }
 
             /**
              * @brief Adds a new flag of type `T` to the flagset
@@ -147,7 +152,7 @@ namespace pnt_cli {
              * @return FlagImpl<T>* to the flag if found, nullptr if not or if the flag is not of type `T`
              */
             template<FlagType T>
-            FlagImpl<T>* find(const std::string &name) {
+            FlagImpl<T>* find(const std::string &name) const {
                 auto f = find_in_either_map(name);
                 return f && f->typeMatches<T>() ? static_cast<FlagImpl<T>*>(f) : nullptr;
             }
@@ -160,9 +165,9 @@ namespace pnt_cli {
              * @return std::optional<T> the value of the flag if found, nullopt otherwise
              */
             template<FlagType T>
-            std::optional<T> get(const std::string &name) {
+            std::optional<T> get(const std::string &name) const {
                 FlagImpl<T>* f = find<T>(name);
-                return f ? std::make_optional(f->value) : std::nullopt;
+                return f ? std::make_optional(f->get()) : std::nullopt;
             }
 
 
@@ -175,13 +180,13 @@ namespace pnt_cli {
              * @return true if successful, false otherwise
              */
             template<FlagType T>
-            bool set(const std::string &name, const std::string& val) {
+            bool set(const std::string& name, std::string val) {
                 FlagImpl<T>* f = find<T>(name);
                 if (!f) {
                     debug_m("Tried to set non existent flag: " + name);
                     return false;
                 };
-                f->value = fromString<T>(val);
+                f->set(val);
                 return true;
             }
 
