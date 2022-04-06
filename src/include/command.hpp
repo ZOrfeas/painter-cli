@@ -58,12 +58,6 @@ namespace pnt_cli {
             Command() = delete;
             Command(const std::string& name, const std::string& description, Action action) 
                 : name_(name), description_(description), action_(action) {}
-            // Command(const char* name, const char* description, Action action) 
-            //     : name_(name), description_(description), action_(action) {}
-            // Command(const char* name, const std::string& description, Action action) 
-            //     : name_(name), description_(description), action_(action) {}
-            // Command(const std::string& name, const char* description, Action action)
-            //     : name_(name), description_(description), action_(action) {}
 
             friend 
             std::shared_ptr<Command> makeCommand(
