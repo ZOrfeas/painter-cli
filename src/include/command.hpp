@@ -41,26 +41,16 @@ namespace pnt_cli {
             std::shared_ptr<Command> parent_;
 
             template<FlagType T>
-            FlagImpl<T>* find_persistent_flag(const std::string& name) const {
-                if (auto val = persistent_flags_.find<T>(name))
-                    return val;
-                if (parent_)
-                    return parent_->find_persistent_flag<T>(name);
-                return nullptr;
-            }
+            FlagImpl<T>* find_persistent_flag(const std::string&) const;
+
             template<FlagType T> 
-            FlagImpl<T>* findFlag(const std::string& name) const {
-                if (auto val = local_flags_.find<T>(name))
-                    return val;
-                return find_persistent_flag<T>(name);             
-            };
+            FlagImpl<T>* find_flag(const std::string&) const;
 
             Command() = delete;
             Command(const std::string& name, const std::string& description, Action action) 
                 : name_(name), description_(description), action_(action) {}
 
-            friend 
-            std::shared_ptr<Command> makeCommand(
+            friend std::shared_ptr<Command> makeCommand(
                 const std::string& name,
                 const std::string& description,
                 Action action
@@ -72,63 +62,107 @@ namespace pnt_cli {
         public:
             ~Command() = default;
             
-            bool isRoot() const { return !parent_; }
-            bool hasFlags() const {
-                return !persistent_flags_.empty() ||
-                       !local_flags_.empty();
-            }
+            bool isRoot() const;
+            bool hasFlags() const;
 
-            void addSubcommand(const std::string& name, const std::string& description, Action action) {
-                subcommands_[name] = makeCommand(name, description, action);
-                auto shared_this = shared_from_this();
-                subcommands_[name]->parent_ = shared_this;
-            }
-            void addSubcommand(std::shared_ptr<Command> subCmd) {
-                subcommands_[subCmd->name_] = subCmd;
-                auto shared_this = shared_from_this();
-                subCmd->parent_ = shared_this;
-            }
+            void addSubcommand(const std::string&, const std::string&, Action);
+            void addSubcommand(std::shared_ptr<Command>);
 
             template<FlagType T>
-            std::optional<T> getFlag(const std::string& name) const {
-                if (FlagImpl<T>* val = findFlag<T>(name))
-                    return val->get();
-                return std::nullopt;
-            }
+            std::optional<T> getFlag(const std::string&) const;
 
             template<FlagType T>
-            bool setFlag(const std::string& name, const std::string& val) {
-                if (FlagImpl<T>* f = findFlag<T>(name)) {
-                    f->set(val);
-                    return true;
-                }
-                return false;
-            }
+            bool setFlag(const std::string&, const std::string&);
 
             template<FlagType T>
-            void addPersistentFlag(std::string name, std::string description, T default_value, std::string shorthand = "") {
-                persistent_flags_.addFlag<T>(name, description, default_value, shorthand);
-            }
+            void addPersistentFlag(const std::string&, const std::string&, T, const std::string& = "");
+
             template<FlagType T>
-            void addLocalFlag(std::string name, std::string description, T default_value, std::string shorthand = "") {
-                local_flags_.addFlag<T>(name, description, default_value, shorthand);
-            }
+            void addLocalFlag(const std::string&, const std::string&, T, const std::string& = "");
 
             Command(Command const&) = delete;             // Copy construct
             Command(Command&&) = delete;                  // Move construct
             Command& operator=(Command const&) = delete;  // Copy assign
             Command& operator=(Command &&) = delete;      // Move assign
 
-            int operator()(const std::vector<std::string>& args) {
-                return action_(this, args);
-            }
+            int operator()(const std::vector<std::string>&);
 
-            int execute(int argc, char** argv) {
-                if (parent_) return parent_->execute(argc, argv);
-                std::vector<std::string> args(argv + 1, argv + argc);
-                error_m("Not implemented");
-            }
+            int execute(int, char**);
     };
+
+    template<FlagType T>
+    FlagImpl<T>* Command::find_persistent_flag(const std::string& name) const {
+        if (auto val = persistent_flags_.find<T>(name))
+            return val;
+        if (parent_)
+            return parent_->find_persistent_flag<T>(name);
+        return nullptr;
+    }
+    template<FlagType T>
+    FlagImpl<T>* Command::find_flag(const std::string& name) const {
+        if (auto val = local_flags_.find<T>(name))
+            return val;
+        return find_persistent_flag<T>(name);             
+    };
+    bool Command::isRoot() const { return !parent_; }
+    bool Command::hasFlags() const {
+        return !persistent_flags_.empty() ||
+                !local_flags_.empty();
+    }
+    void Command::addSubcommand(
+        const std::string& name,
+        const std::string& description,
+        Action action
+    ) {
+        subcommands_[name] = makeCommand(name, description, action);
+        auto shared_this = shared_from_this();
+        subcommands_[name]->parent_ = shared_this;
+    }
+    void Command::addSubcommand(std::shared_ptr<Command> subCmd) {
+        subcommands_[subCmd->name_] = subCmd;
+        auto shared_this = shared_from_this();
+        subCmd->parent_ = shared_this;
+    }
+    template<FlagType T>
+    std::optional<T> Command::getFlag(const std::string& name) const {
+        if (FlagImpl<T>* val = find_flag<T>(name))
+            return val->get();
+        return std::nullopt;
+    }
+    template<FlagType T>
+    bool Command::setFlag(const std::string& name, const std::string& val) {
+        if (FlagImpl<T>* f = find_flag<T>(name)) {
+            f->set(val);
+            return true;
+        }
+        return false;
+    }
+    template<FlagType T>
+    void Command::addPersistentFlag(
+        const std::string& name,
+        const std::string& description,
+        T default_value,
+        const std::string& shorthand
+    ) {
+        persistent_flags_.addFlag<T>(name, description, default_value, shorthand);
+    }
+    template<FlagType T>
+    void Command::addLocalFlag(
+        const std::string& name,
+        const std::string& description,
+        T default_value,
+        const std::string& shorthand
+    ){
+        local_flags_.addFlag<T>(name, description, default_value, shorthand);
+    }
+    int Command::operator()(const std::vector<std::string>& args) {
+        return action_(this, args);
+    }
+    int Command::execute(int argc, char** argv) {
+        if (parent_) return parent_->execute(argc, argv);
+        std::vector<std::string> args(argv + 1, argv + argc);
+        error_m("Not implemented");
+    }
 
 } // namespace paint_cli
 
