@@ -62,7 +62,7 @@ namespace pnt_cli {
         public:
             ~Command() = default;
             
-            bool isRoot() const;
+            bool hasParent() const;
             bool hasSubcommands() const;
             bool hasFlags() const;
 
@@ -105,7 +105,7 @@ namespace pnt_cli {
             return val;
         return find_persistent_flag<T>(name);             
     };
-    bool Command::isRoot() const { return !parent_; }
+    bool Command::hasParent() const { return (bool)parent_; }
     bool Command::hasSubcommands() const { return !subcommands_.empty(); }
     bool Command::hasFlags() const {
         return !persistent_flags_.empty() ||
@@ -167,7 +167,7 @@ namespace pnt_cli {
         return action_(this, args);
     }
     int Command::execute(int argc, char** argv) {
-        if (!isRoot()) return parent_->execute(argc, argv);
+        if (!hasParent()) return parent_->execute(argc, argv);
         std::vector<std::string> args(argv + 1, argv + argc);
         error_m("Not implemented");
         return 0;

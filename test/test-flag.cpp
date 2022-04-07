@@ -38,33 +38,33 @@ int main() {
 
     FlagSet fs;
     tsuite("Basic FlagSet initialization checks",
-        test("Should be empty", fs.empty())
+        test("Freshly constructed Flagset should be empty", fs.empty())
     );
     
     fs.addFlag<int>("t_int", "int flag", 1, "i");
     fs.addFlag<float>( "t_float", "float flag", 1.0f, "f");
 
     tsuite("Basic flag operations", 
-        test("Should not be empty", !fs.empty()),
-        test("Should have 2 flags", fs.size() == 2),
+        test("After insertion of two flags, flagset should not be empty", !fs.empty()),
+        test("Flagset should have 2 flags", fs.size() == 2),
 
-        test("Flag 't_int' should exist", fs.find<int>("t_int")),
-        test("Flag 't_int' should be searchable via shorthand", fs.find<int>("i")),
-        test("Flag 't_int' has the default value", fs.get<int>("t_int") == 1),
-        test("Flag 't_int' should be set", fs.set<int>("t_int", "2")),
-        test("Flag 't_int' should have the new value", fs.get<int>("t_int") == 2)
+        test("Check if first flag can be found", fs.find<int>("t_int")),
+        test("Check if first flag can be found via shorthand", fs.find<int>("i")),
+        test("Check if first flag's value is the default", fs.get<int>("t_int") == 1),
+        test("Check if first flag can be set", fs.set<int>("t_int", "2")),
+        test("Check if first flag value changed after setting", fs.get<int>("t_int") == 2)
     );
 
     fs.addFlag<Hostname>("test_str", "test custom flag", fromString<Hostname>("localhost:5000"), "s");
     tsuite("Custom flag type", 
-        test("Should have 3 flags", fs.size() == 3),
-        test("Flag 'test_str' should exist", fs.get<Hostname>("test_str")),
-        test("Flag 'test_str' has the default value", [&]() {
+        test("After insertion of third (custom flag) flagset should now have 3 flags", fs.size() == 3),
+        test("Check if custom flag can be found", fs.get<Hostname>("test_str")),
+        test("Check if custom flag has the default value", [&]() {
             Hostname tmp = *fs.get<Hostname>("test_str");
             return tmp.name == "localhost" && tmp.port == 5000;
         }()),
-        test("Flag 'test_str' should be set", fs.set<Hostname>("test_str", "localhost:5001")),
-        test("Flag 'test_str' should have the new value", [&]() {
+        test("Check if custom flag can be set", fs.set<Hostname>("test_str", "localhost:5001")),
+        test("Check if custom flag value changed after setting", [&]() {
             Hostname tmp = *fs.get<Hostname>("test_str");
             return tmp.name == "localhost" && tmp.port == 5001;
         }())

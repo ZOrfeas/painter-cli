@@ -19,17 +19,17 @@ int main(int argc, char** argv) {
     );
 
     tsuite("Basic command functionality",
-        test("Should have no flags", !rootCmd->hasFlags()),
-        test("Should be root", rootCmd->isRoot())
+        test("Freshly initialized flag should have no flags", !rootCmd->hasFlags()),
+        test("Should have no parent", !rootCmd->hasParent())
     );
 
     rootCmd->addLocalFlag<bool>("verbose", "enable verbose output", false);
     tsuite("Basic local flag functionality",
-        test("Should have flags", rootCmd->hasFlags()),
-        test("Should have the verbose bool flag", rootCmd->getFlag<bool>("verbose")),
-        test("Flag should be false", !(*rootCmd->getFlag<bool>("verbose"))),
-        test("Should be able to set flag", rootCmd->setFlag<bool>("verbose", "true")),
-        test("Flag should be true", *rootCmd->getFlag<bool>("verbose"))
+        test("Should have flags after insertion", rootCmd->hasFlags()),
+        test("Check if 'verbose' flag can be found", rootCmd->getFlag<bool>("verbose")),
+        test("Check if 'verbose' flag value is the default", !(*rootCmd->getFlag<bool>("verbose"))),
+        test("Check if 'verbose' flag can be set", rootCmd->setFlag<bool>("verbose", "true")),
+        test("Check if 'verbose' flag value changed after setting", *rootCmd->getFlag<bool>("verbose"))
     );
 
     auto subCmd = rootCmd->addSubcommand("sub", "this is a sub command to test things",
@@ -41,10 +41,10 @@ int main(int argc, char** argv) {
         }
     );
     tsuite("Basic subcommand functionality",
-        test("Should not be root", !subCmd->isRoot()),
-        test("Should not have flags", !subCmd->hasFlags()),
-        test("Should have subcommands", rootCmd->hasSubcommands()),
-        test("Local root flag should not be visible from subcommand", !subCmd->getFlag<bool>("verbose"))
+        test("Command created through addSubcommand should have parent", subCmd->hasParent()),
+        test("Freshly constructed subcommand should have no owned commands", !subCmd->hasFlags()),
+        test("Root command should now have subcommands", rootCmd->hasSubcommands()),
+        test("Root local flag should be invisible from subcommand", !subCmd->getFlag<bool>("verbose"))
     );
 
 
