@@ -35,39 +35,38 @@ int main() {
     static_assert(FlagType<std::string>);
     static_assert(FlagType<bool>);
     static_assert(FlagType<Hostname>);
+    TestSuite tsuite("flag.hpp tests");
 
     FlagSet fs;
-    tsuite("Basic FlagSet initialization checks",{
-        {"Freshly constructed Flagset should be empty", fs.empty()},
-    });
+    tsuite.createGroup("Basic FlagSet initialization checks")
+        .t("Freshly constructed Flagset should be empty", fs.empty());
     
     fs.addFlag<int>("t_int", "int flag", 1, "i");
     fs.addFlag<float>( "t_float", "float flag", 1.0f, "f");
 
-    tsuite("Basic flag operations",{
-        {"After insertion of two flags, flagset should not be empty", !fs.empty()},
-        {"Flagset should have 2 flags", fs.size() == 2},
-
-        {"Check if first flag can be found", !!fs.find<int>("t_int")},
-        {"Check if first flag can be found via shorthand", !!fs.find<int>("i")},
-        {"Check if first flag's value is the default", (*fs.get<int>("t_int")) == 1},
-        {"Check if first flag can be set", fs.set<int>("t_int", "2")},
-        {"Check if first flag value changed after setting", (*fs.get<int>("t_int")) == 2},
-    });
+    tsuite.createGroup("Basic flag operations")
+        .t("After insertion of two flags, flagset should not be empty", !fs.empty())
+        .t("Flagset should have 2 flags", fs.size() == 2)
+        .t("Check if first flag can be found", fs.find<int>("t_int"))
+        .t("Check if first flag can be found via shorthand", fs.find<int>("i"))
+        .t("Check if first flag's value is the default", (*fs.get<int>("t_int")) == 1)
+        .t("Check if first flag can be set", fs.set<int>("t_int", "2"))
+        .t("Check if first flag value changed after setting", (*fs.get<int>("t_int")) == 2);
 
     fs.addFlag<Hostname>("test_str", "test custom flag", fromString<Hostname>("localhost:5000"), "s");
-    tsuite("Custom flag type", {
-        {"After insertion of third (custom flag) flagset should now have 3 flags", fs.size() == 3},
-        {"Check if custom flag can be found", !!fs.get<Hostname>("test_str")},
-        {"Check if custom flag has the default value", [&]() {
+    tsuite.createGroup("Custom flag type")
+        .t("After insertion of third (custom flag) flagset should now have 3 flags", fs.size() == 3)
+        .t("Check if custom flag can be found", fs.get<Hostname>("test_str"))
+        .t("Check if custom flag has the default value", [&]() {
             Hostname tmp = *fs.get<Hostname>("test_str");
+            std::cout << tmp.name << ":" << tmp.port << std::endl;
             return tmp.name == "localhost" && tmp.port == 5000;
-        }()},
-        {"Check if custom flag can be set", fs.set<Hostname>("test_str", "localhost:5001")},
-        {"Check if custom flag value changed after setting", [&]() {
+        }()) //!Note, if provided as a callback it fails due to running after the set-test
+        .t("Check if custom flag can be set", fs.set<Hostname>("test_str", "localhost:5001"))
+        .t("Check if custom flag value changed after setting", [&]() {
             Hostname tmp = *fs.get<Hostname>("test_str");
             return tmp.name == "localhost" && tmp.port == 5001;
-        }()},
-    });
+        });
 
+    return tsuite.run();
 }
