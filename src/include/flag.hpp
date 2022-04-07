@@ -185,7 +185,7 @@ namespace pnt_cli {
     }
     Flag* FlagSet::find_in_either_map(const std::string& name) const {
         Flag* f;
-        if (name.length() == 2) { f = find_in_map(shorthands_, name); } 
+        if (name.length() == 1) { f = find_in_map(shorthands_, name); } 
         else { f = find_in_map(flags_, name); }
         return f;
     }
@@ -215,7 +215,7 @@ namespace pnt_cli {
     template<FlagType T> bool FlagSet::set(const std::string& name, const std::string& val) {
         FlagImpl<T>* f = find<T>(name);
         if (!f) {
-            debug_m("Tried to set non existent flag: " + name);
+            log_m("Tried to set non existent flag: " + name);
             return false;
         };
         f->set(val);

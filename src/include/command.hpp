@@ -63,10 +63,11 @@ namespace pnt_cli {
             ~Command() = default;
             
             bool isRoot() const;
+            bool hasSubcommands() const;
             bool hasFlags() const;
 
-            void addSubcommand(const std::string&, const std::string&, Action);
-            void addSubcommand(std::shared_ptr<Command>);
+            std::shared_ptr<Command> addSubcommand(const std::string&, const std::string&, Action);
+            std::shared_ptr<Command> addSubcommand(std::shared_ptr<Command>);
 
             template<FlagType T>
             std::optional<T> getFlag(const std::string&) const;
@@ -105,23 +106,28 @@ namespace pnt_cli {
         return find_persistent_flag<T>(name);             
     };
     bool Command::isRoot() const { return !parent_; }
+    bool Command::hasSubcommands() const { return !subcommands_.empty(); }
     bool Command::hasFlags() const {
         return !persistent_flags_.empty() ||
                 !local_flags_.empty();
     }
-    void Command::addSubcommand(
+    std::shared_ptr<Command> Command::addSubcommand(
         const std::string& name,
         const std::string& description,
         Action action
     ) {
-        subcommands_[name] = makeCommand(name, description, action);
+        auto cmd = makeCommand(name, description, action);
+        subcommands_[name] = cmd;
         auto shared_this = shared_from_this();
-        subcommands_[name]->parent_ = shared_this;
+        cmd->parent_ = shared_this;
+        return cmd;                
     }
-    void Command::addSubcommand(std::shared_ptr<Command> subCmd) {
+    std::shared_ptr<Command> Command::addSubcommand(std::shared_ptr<Command> subCmd) {
         subcommands_[subCmd->name_] = subCmd;
         auto shared_this = shared_from_this();
         subCmd->parent_ = shared_this;
+        return subCmd;
+        
     }
     template<FlagType T>
     std::optional<T> Command::getFlag(const std::string& name) const {
@@ -137,6 +143,8 @@ namespace pnt_cli {
         }
         return false;
     }
+
+    // TODO: Catch cases of flag conflicts
     template<FlagType T>
     void Command::addPersistentFlag(
         const std::string& name,
@@ -159,9 +167,10 @@ namespace pnt_cli {
         return action_(this, args);
     }
     int Command::execute(int argc, char** argv) {
-        if (parent_) return parent_->execute(argc, argv);
+        if (!isRoot()) return parent_->execute(argc, argv);
         std::vector<std::string> args(argv + 1, argv + argc);
         error_m("Not implemented");
+        return 0;
     }
 
 } // namespace paint_cli

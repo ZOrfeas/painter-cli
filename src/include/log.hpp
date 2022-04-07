@@ -4,37 +4,7 @@
 #include <iostream>
 #include <string>
 #include <chrono>
-
-#ifndef DEBUG
-#define DEBUG true
-#endif // DEBUG
-#ifndef VERBOSE
-#define VERBOSE true
-#endif // VERBOSE
-
-#if VERBOSE
-    #define preamble_m(type) \
-        make_logger_preamble_helper(type, __FILE__, __LINE__)
-#else
-    #define preamble_m(type) \
-        make_logger_preamble_helper(type)
-#endif // VERBOSE
-
-#define log_m(msg) \
-    log_print_helper(std::cout, preamble_m("LOG"), msg)
-#define error_m(msg) \
-    log_print_helper(std::cerr, preamble_m("ERROR"), msg); std::exit(1)
-#if DEBUG
-    #define debug_m(msg) \
-        log_print_helper(std::cout, preamble_m("DEBUG"), msg)
-#else
-    #define debug_m(msg)
-#endif // DEBUG
-#define test_if(msg, cond) \
-    if(cond) { log_print_helper(std::cout, preamble_m("TEST"),std::string("PASS: \t") + msg); } \
-    else { log_print_helper(std::cout, preamble_m("TEST"),std::string("FAIL: \t") + msg); }
-#define test_pred(msg, predicate) \
-    test_if(msg, (predicate()))
+#include <iomanip>
 
 static inline std::string getTime() {
     using namespace std::chrono;
@@ -44,40 +14,44 @@ static inline std::string getTime() {
     t.pop_back();
     return t;
 }
-static inline std::string make_logger_preamble_helper(const std::string& type) {
+static inline std::string preamble(const std::string& type) {
     return "[" + type + " " + getTime() + "]: ";
 }
-static inline std::string make_logger_preamble_helper(
-    const std::string& type,
-    const std::string& file,
-    const int& line
-) {
-    return "[" + type + " " + getTime() + "]: line " + std::to_string(line) + " in " + file + "\t";
-}
-static inline void log_print_helper(
-    std::ostream& target,
-    const std::string& preamble,
+static inline std::string format_log(
+    const std::string& log_preamble,
     const std::string& message
 ) {
-    target << preamble << message << std::endl;
+    return log_preamble + message;
+    // target << preamble << message << std::endl;
+}
+static inline void log_m(const std::string& msg) {
+    std::cout << format_log(preamble("LOG"), msg);
+}
+static inline void error_m(const std::string& msg) {
+    std::cerr << format_log(preamble("ERROR"), msg);
+    std::exit(1);
+}
+static inline void print_centered_text(
+    std::ostream& target,
+    const std::string& text,
+    int width = 80,
+    char fill = ' '
+) {
+    target << std::right << std::setfill(fill) << std::setw(width/2) <<
+        text.substr(0, text.length()/2) << std::left << std::setfill(fill) <<
+        std::setw(width/2) << text.substr(text.length()/2) << std::endl;
 }
 
-// static inline void log_F(const std::string& message) {
-//     log_print_helper(std::cout, make_logger_preamble("LOG"), message);
-// }
-// static inline void error_F(const std::string& message) {
-//     log_print_helper(std::cerr, make_logger_preamble("ERROR"), message);
-//     std::exit(1);
-// }
-// static inline void warning_F(const std::string& message) {
-//     log_print_helper(std::cout, make_logger_preamble("WARNING"), message);
-// }
-// static inline void info_F(const std::string& message) {
-//     log_print_helper(std::cout, make_logger_preamble("INFO"), message);
-// }
-// static inline void debug_F(const std::string& message) {
-//     if (!DEBUG) return;
-//     log_print_helper(std::cout, make_logger_preamble("DEBUG"), message);
-// }
+static inline void print_left_right_text(
+    std::ostream& target,
+    const std::string& left,
+    const std::string& right,
+    int width = 80,
+    char fill = ' '
+) {
+    target << std::left << std::setfill(fill) << std::setw(width - right.length()) <<
+        left << std::right << std::setfill(fill) << std::setw(right.length()) <<
+        right << std::endl;
+}
 
 #endif // LOG_HPP_

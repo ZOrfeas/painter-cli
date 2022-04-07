@@ -17,7 +17,7 @@ tests: $(TESTS)
 test-flag: bin/test-flag
 test-command: bin/test-command
 
-bin/test-%: test/test-%.cpp src/include/%.hpp src/include/log.hpp
+bin/test-%: test/test-%.cpp src/include/%.hpp src/include/test.hpp
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 clean:
