@@ -60,6 +60,8 @@ namespace pnt_cli {
                     new Command(name, description, action)
                 );
             }
+            template<FlagType T>
+            void addFlagToSet(FlagSet&, const std::string&, const std::string&, T, const std::string&);
         public:
             ~Command() = default;
             
@@ -146,7 +148,21 @@ namespace pnt_cli {
     }
 
     //*DONE: Catch cases of flag conflicts
-    // TODO: Test cases of flag conflicts
+    //*DONE: Test cases of flag conflicts
+    template<FlagType T>
+    inline void Command::addFlagToSet(
+        FlagSet& set,
+        const std::string& name,
+        const std::string& description,
+        T default_value,
+        const std::string& shorthand
+    ) {
+        if (find_flag<T>(name))
+            throw std::runtime_error(std::string("Flag with name ") + name + " already exists");
+        if (shorthand.length() && find_flag<T>(shorthand))
+            throw std::runtime_error(std::string("Flag with shorthand ") + shorthand + " already exists");
+        set.addFlag<T>(name, description, default_value, shorthand);
+    }
     template<FlagType T>
     inline void Command::addPersistentFlag(
         const std::string& name,
@@ -154,8 +170,7 @@ namespace pnt_cli {
         T default_value,
         const std::string& shorthand
     ) {
-        if (!persistent_flags_.addFlag<T>(name, description, default_value, shorthand))
-            throw std::runtime_error(std::string("Flag already exists: ") + name);
+        addFlagToSet<T>(persistent_flags_, name, description, default_value, shorthand);
     }
     template<FlagType T>
     inline void Command::addLocalFlag(
@@ -164,8 +179,7 @@ namespace pnt_cli {
         T default_value,
         const std::string& shorthand
     ){
-        if (!local_flags_.addFlag<T>(name, description, default_value, shorthand))
-            throw std::runtime_error(std::string("Flag already exists: ") + name);
+        addFlagToSet<T>(local_flags_, name, description, default_value, shorthand);
     }
     inline int Command::operator()(const std::vector<std::string>& args) {
         return action_(this, args);

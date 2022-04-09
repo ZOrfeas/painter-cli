@@ -34,6 +34,9 @@ class CommandTest : public ::testing::Test {
         void addPersistentFlagToRoot() {
             rootCmd->addPersistentFlag<bool>(persistentFlagName, persistentFlagDescription, persistentFlagDefaultValue, persistentFlagShorthand);
         }
+        void addPersistentFlagToSub() {
+            subCmd->addPersistentFlag<bool>(persistentFlagName, persistentFlagDescription, persistentFlagDefaultValue, persistentFlagShorthand);
+        }
         void addSubcommandToRoot() {
             subCmd = makeCommand("sub_command", "sub command description", someDefaultAction);
             rootCmd->addSubcommand(subCmd);
@@ -53,6 +56,7 @@ TEST_F(CommandTest, LocalFlagsWork) {
     EXPECT_EQ((*rootCmd->getFlag<bool>(localFlagName)), localFlagDefaultValue);
     EXPECT_TRUE(rootCmd->setFlag<bool>(localFlagName, toString<bool>(!localFlagDefaultValue)));
     EXPECT_EQ((*rootCmd->getFlag<bool>(localFlagName)), !localFlagDefaultValue);
+    EXPECT_THROW(addLocalFlagToRoot(),std::runtime_error);
 }
 
 TEST_F(CommandTest, SubCommandWorks) {
@@ -70,4 +74,5 @@ TEST_F(CommandTest, PersistentFlagsWork) {
     addSubcommandToRoot();
     EXPECT_TRUE(subCmd->getFlag<bool>(persistentFlagName));
     EXPECT_TRUE(subCmd->getFlag<bool>(persistentFlagShorthand));
+    EXPECT_THROW(addPersistentFlagToSub(), std::runtime_error);
 }
