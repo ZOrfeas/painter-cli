@@ -10,18 +10,24 @@ CXXFLAGS=$(INCLUDE_FLAGS) -std=c++20 -Wall -Werror
 
 TESTS=test-flag test-command
 .PHONY: all tests clean $(TESTS)
-TEST_DEPS=src/include/test.hpp src/include/log.hpp
 
 all: tests
-tests: $(TESTS)
-
+tests: bin/tests $(TESTS)
 test-flag: bin/test-flag
 test-command: bin/test-command
 
+
+bin/tests: build/test-command.o build/test-flag.o
+	$(CXX) $(CXXFLAGS) $^ -lgtest -lgtest_main -pthread -o $@
+bin/test-flag: build/test-flag.o
+	$(CXX) $(CXXFLAGS) $^ -lgtest -lgtest_main -pthread -o $@
+bin/test-command: build/test-command.o
+	$(CXX) $(CXXFLAGS) $^ -lgtest -lgtest_main -pthread -o $@
+
 # manually add flag.hpp dependency to command.hpp tests
-bin/test-command: src/include/flag.hpp
-bin/test-%: test/test-%.cpp src/include/%.hpp $(TEST_DEPS) 
-	$(CXX) $(CXXFLAGS) -O0 -g $< -o $@
+build/test-command.o: src/include/flag.hpp
+build/test-%.o: test/test-%.cpp src/include/%.hpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -rf bin/*

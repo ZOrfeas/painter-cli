@@ -16,6 +16,7 @@
 #include <optional>
 #include <functional>
 #include <concepts>
+#include <stdexcept>
 
 #include <flag.hpp>
 
@@ -23,7 +24,7 @@ namespace pnt_cli {
     class Command;
     using Action = std::function<int(const Command*, std::vector<std::string>)>;
 
-    std::shared_ptr<Command> makeCommand(
+    inline std::shared_ptr<Command> makeCommand(
         const std::string& name,
         const std::string& description,
         Action action
@@ -92,7 +93,7 @@ namespace pnt_cli {
     };
 
     template<FlagType T>
-    FlagImpl<T>* Command::find_persistent_flag(const std::string& name) const {
+    inline FlagImpl<T>* Command::find_persistent_flag(const std::string& name) const {
         if (auto val = persistent_flags_.find<T>(name))
             return val;
         if (parent_)
@@ -100,18 +101,18 @@ namespace pnt_cli {
         return nullptr;
     }
     template<FlagType T>
-    FlagImpl<T>* Command::find_flag(const std::string& name) const {
+    inline FlagImpl<T>* Command::find_flag(const std::string& name) const {
         if (auto val = local_flags_.find<T>(name))
             return val;
         return find_persistent_flag<T>(name);             
     };
-    bool Command::hasParent() const { return (bool)parent_; }
-    bool Command::hasSubcommands() const { return !subcommands_.empty(); }
-    bool Command::hasFlags() const {
+    inline bool Command::hasParent() const { return (bool)parent_; }
+    inline bool Command::hasSubcommands() const { return !subcommands_.empty(); }
+    inline bool Command::hasFlags() const {
         return !persistent_flags_.empty() ||
                 !local_flags_.empty();
     }
-    std::shared_ptr<Command> Command::addSubcommand(
+    inline std::shared_ptr<Command> Command::addSubcommand(
         const std::string& name,
         const std::string& description,
         Action action
@@ -122,7 +123,7 @@ namespace pnt_cli {
         cmd->parent_ = shared_this;
         return cmd;                
     }
-    std::shared_ptr<Command> Command::addSubcommand(std::shared_ptr<Command> subCmd) {
+    inline std::shared_ptr<Command> Command::addSubcommand(std::shared_ptr<Command> subCmd) {
         subcommands_[subCmd->name_] = subCmd;
         auto shared_this = shared_from_this();
         subCmd->parent_ = shared_this;
@@ -130,13 +131,13 @@ namespace pnt_cli {
         
     }
     template<FlagType T>
-    std::optional<T> Command::getFlag(const std::string& name) const {
+    inline std::optional<T> Command::getFlag(const std::string& name) const {
         if (FlagImpl<T>* val = find_flag<T>(name))
             return val->get();
         return std::nullopt;
     }
     template<FlagType T>
-    bool Command::setFlag(const std::string& name, const std::string& val) {
+    inline bool Command::setFlag(const std::string& name, const std::string& val) {
         if (FlagImpl<T>* f = find_flag<T>(name)) {
             f->set(val);
             return true;
@@ -144,29 +145,32 @@ namespace pnt_cli {
         return false;
     }
 
-    // TODO: Catch cases of flag conflicts
+    //*DONE: Catch cases of flag conflicts
+    // TODO: Test cases of flag conflicts
     template<FlagType T>
-    void Command::addPersistentFlag(
+    inline void Command::addPersistentFlag(
         const std::string& name,
         const std::string& description,
         T default_value,
         const std::string& shorthand
     ) {
-        persistent_flags_.addFlag<T>(name, description, default_value, shorthand);
+        if (!persistent_flags_.addFlag<T>(name, description, default_value, shorthand))
+            throw std::runtime_error(std::string("Flag already exists: ") + name);
     }
     template<FlagType T>
-    void Command::addLocalFlag(
+    inline void Command::addLocalFlag(
         const std::string& name,
         const std::string& description,
         T default_value,
         const std::string& shorthand
     ){
-        local_flags_.addFlag<T>(name, description, default_value, shorthand);
+        if (!local_flags_.addFlag<T>(name, description, default_value, shorthand))
+            throw std::runtime_error(std::string("Flag already exists: ") + name);
     }
-    int Command::operator()(const std::vector<std::string>& args) {
+    inline int Command::operator()(const std::vector<std::string>& args) {
         return action_(this, args);
     }
-    int Command::execute(int argc, char** argv) {
+    inline int Command::execute(int argc, char** argv) {
         if (!hasParent()) return parent_->execute(argc, argv);
         std::vector<std::string> args(argv + 1, argv + argc);
         error_m("Not implemented");

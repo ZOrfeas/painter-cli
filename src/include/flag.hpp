@@ -21,8 +21,8 @@
 namespace pnt_cli {
     //!Note: To extend, implement pnt_cli::fromString<T>, pnt_cli::toString<T> by explicitly specializing for your type T.
     
-    template<typename T> T fromString(const std::string& str);
-    template<typename T> std::string toString(const T& val);
+    template<typename T> inline T fromString(const std::string& str);
+    template<typename T> inline std::string toString(const T& val);
 
     template<typename T>
     concept FlagType = requires (T t, const std::string& s) {
@@ -30,18 +30,19 @@ namespace pnt_cli {
         { pnt_cli::toString<T>(t) } -> std::same_as<std::string>;
     };
 
+    // TODO: test and document erroneous input to fromString
     
-    template<std::integral T> T fromString(const std::string& str) { return std::stoi(str); }
-    template<std::integral T> std::string toString(const T& val) {return std::to_string(val); }
+    template<std::integral T> inline T fromString(const std::string& str) { return std::stoi(str); }
+    template<std::integral T> inline std::string toString(const T& val) {return std::to_string(val); }
 
-    template<std::floating_point T> T fromString(const std::string& str) { return std::stof(str); }
-    template<std::floating_point T> std::string toString(const T& val) {return std::to_string(val); }
+    template<std::floating_point T> inline T fromString(const std::string& str) { return std::stof(str); }
+    template<std::floating_point T> inline std::string toString(const T& val) {return std::to_string(val); }
 
-    template<> std::string fromString<std::string>(const std::string& str) { return str; }
-    template<> std::string toString<std::string>(const std::string& val) { return val; }
+    template<> inline std::string fromString<std::string>(const std::string& str) { return str; }
+    template<> inline std::string toString<std::string>(const std::string& val) { return val; }
 
-    template<> bool fromString<bool>(const std::string& str) { return "true" == str ? true : false; }
-    template<> std::string toString<bool>(const bool& val) { return val ? "true" : "false"; }
+    template<> inline bool fromString<bool>(const std::string& str) { return "true" == str ? true : false; }
+    template<> inline std::string toString<bool>(const bool& val) { return val ? "true" : "false"; }
 
     class Flag {
         private:
@@ -67,8 +68,8 @@ namespace pnt_cli {
             virtual ~Flag() = default;
     };
     template<FlagType T>
-    bool Flag::typeMatches() const { return utils::type_id<T>() == type_id_; }
-    std::ostream& operator<<(std::ostream& os, const Flag& f) {
+    inline bool Flag::typeMatches() const { return utils::type_id<T>() == type_id_; }
+    inline std::ostream& operator<<(std::ostream& os, const Flag& f) {
         os << "{" <<  f.name_ << " (" << f.shorthand_ << ") " << f.description_ << "}";
         return os;
     }
@@ -86,10 +87,10 @@ namespace pnt_cli {
             ~FlagImpl() = default;    
     };
     template<FlagType T>
-    void FlagImpl<T>::set(const std::string& str)  {
+    inline void FlagImpl<T>::set(const std::string& str)  {
         value = fromString<T>(str);
     }
-    template<FlagType T> T FlagImpl<T>::get() const {
+    template<FlagType T> inline T FlagImpl<T>::get() const {
         return value;
     }
 
@@ -133,9 +134,10 @@ namespace pnt_cli {
              * @param description the description of the flag
              * @param defaultVal the default value of the flag
              * @param shorthand (optionally) the shorthand of the flag
+             * @return true if successful, false if name already exists 
              */
             template<FlagType T>
-            void addFlag(
+            bool addFlag(
                 const std::string&,
                 const std::string&,
                 T,
@@ -176,43 +178,47 @@ namespace pnt_cli {
 
             friend std::ostream& operator<<(std::ostream&, const FlagSet&);
     };
-    Flag* FlagSet::find_in_map(const std::map<std::string, std::shared_ptr<Flag>>& map, const std::string& name) {
+    inline Flag* FlagSet::find_in_map(const std::map<std::string, std::shared_ptr<Flag>>& map, const std::string& name) {
         auto it = map.find(name);
         if (it == map.end()) {
             return nullptr;
         }
         return it->second.get();
     }
-    Flag* FlagSet::find_in_either_map(const std::string& name) const {
+    inline Flag* FlagSet::find_in_either_map(const std::string& name) const {
         Flag* f;
         if (name.length() == 1) { f = find_in_map(shorthands_, name); } 
         else { f = find_in_map(flags_, name); }
         return f;
     }
-    bool FlagSet::empty() const { return flags_.empty(); }
-    size_t FlagSet::size() const { return flags_.size(); }
-    template<FlagType T> void FlagSet::addFlag(
+    inline bool FlagSet::empty() const { return flags_.empty(); }
+    inline size_t FlagSet::size() const { return flags_.size(); }
+    template<FlagType T> inline bool FlagSet::addFlag(
         const std::string& name, 
         const std::string& description,
         T defaultVal,
         const std::string& shorthand
     ) {
+        if (find_in_either_map(name)) {
+            return false;
+        }
         auto flag = std::make_shared<FlagImpl<T>>(name, shorthand, description, defaultVal);
         flags_[name] = flag;
         if (shorthand != "") {
             shorthands_[shorthand] = flag;
             long_to_short_[name] = shorthand;
         }
+        return true;
     }
-    template<FlagType T> FlagImpl<T>* FlagSet::find(const std::string& name) const {
+    template<FlagType T> inline FlagImpl<T>* FlagSet::find(const std::string& name) const {
         auto f = find_in_either_map(name);
         return f && f->typeMatches<T>() ? static_cast<FlagImpl<T>*>(f) : nullptr;
     }
-    template<FlagType T> std::optional<T> FlagSet::get(const std::string& name) const {
+    template<FlagType T> inline std::optional<T> FlagSet::get(const std::string& name) const {
         FlagImpl<T>* f = find<T>(name);
         return f ? std::make_optional(f->get()) : std::nullopt;
     }
-    template<FlagType T> bool FlagSet::set(const std::string& name, const std::string& val) {
+    template<FlagType T> inline bool FlagSet::set(const std::string& name, const std::string& val) {
         FlagImpl<T>* f = find<T>(name);
         if (!f) {
             log_m("Tried to set non existent flag: " + name);
@@ -221,7 +227,7 @@ namespace pnt_cli {
         f->set(val);
         return true;
     }
-    std::ostream& operator<<(std::ostream& os, const FlagSet& fs) {
+    inline std::ostream& operator<<(std::ostream& os, const FlagSet& fs) {
         os << "FlagSet:" << '\n';
         os << "\tFlags:" << '\n';
         os << '\t' << utils::stringify_indirect_map(fs.flags_);
