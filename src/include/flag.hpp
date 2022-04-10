@@ -44,6 +44,9 @@ namespace pnt_cli {
     template<> inline bool fromString<bool>(const std::string& str) { return "true" == str ? true : false; }
     template<> inline std::string toString<bool>(const bool& val) { return val ? "true" : "false"; }
 
+    template<FlagType T>
+    class FlagImpl;
+
     class Flag {
         private:
             std::string name_;
@@ -62,6 +65,7 @@ namespace pnt_cli {
              * @return true if matches
              */
             template<FlagType T> bool typeMatches() const ;
+            template<FlagType T> FlagImpl<T>* as();
             // overload stream operator for printing
             friend std::ostream& operator<<(std::ostream&, const Flag&); 
             Flag() = delete;
@@ -69,6 +73,12 @@ namespace pnt_cli {
     };
     template<FlagType T>
     inline bool Flag::typeMatches() const { return utils::type_id<T>() == type_id_; }
+    template<FlagType T>
+    inline FlagImpl<T>* Flag::as() {
+        return typeMatches<T>() ?
+            static_cast<FlagImpl<T>*>(this) :
+            nullptr;
+    }
     inline std::ostream& operator<<(std::ostream& os, const Flag& f) {
         os << "{" <<  f.name_ << " (" << f.shorthand_ << ") " << f.description_ << "}";
         return os;
@@ -94,7 +104,6 @@ namespace pnt_cli {
         return value;
     }
 
-
     class FlagSet {
         private:
             std::map<std::string, std::shared_ptr<Flag>> flags_;
@@ -112,13 +121,6 @@ namespace pnt_cli {
                 const std::map<std::string, std::shared_ptr<Flag>>&,
                 const std::string&
             );
-            /**
-             * @brief Checks in either of the flagset maps depending on the size of the flag name.
-             * 
-             * @param name the name to check for
-             * @return Flag* to the flag if found, nullptr otherwise
-             */
-            Flag* find_in_either_map(const std::string&) const;
         public:
             FlagSet() = default;            
             ~FlagSet() = default;
@@ -143,7 +145,13 @@ namespace pnt_cli {
                 T,
                 const std::string& = ""
             );
-            
+            /**
+             * @brief Checks in either of the flagset maps depending on the size of the flag name.
+             * 
+             * @param name the name to check for
+             * @return Flag* to the flag if found, nullptr otherwise
+             */
+            Flag* find_simple(const std::string&) const;            
             /**
              * @brief Checks if a flag of type `T` exists
              * 
@@ -185,7 +193,7 @@ namespace pnt_cli {
         }
         return it->second.get();
     }
-    inline Flag* FlagSet::find_in_either_map(const std::string& name) const {
+    inline Flag* FlagSet::find_simple(const std::string& name) const {
         Flag* f;
         if (name.length() == 1) { f = find_in_map(shorthands_, name); } 
         else { f = find_in_map(flags_, name); }
@@ -199,7 +207,7 @@ namespace pnt_cli {
         T defaultVal,
         const std::string& shorthand
     ) {
-        if (find_in_either_map(name)) {
+        if (find_simple(name)) {
             return false;
         }
         auto flag = std::make_shared<FlagImpl<T>>(name, shorthand, description, defaultVal);
@@ -211,7 +219,7 @@ namespace pnt_cli {
         return true;
     }
     template<FlagType T> inline FlagImpl<T>* FlagSet::find(const std::string& name) const {
-        auto f = find_in_either_map(name);
+        auto f = find_simple(name);
         return f && f->typeMatches<T>() ? static_cast<FlagImpl<T>*>(f) : nullptr;
     }
     template<FlagType T> inline std::optional<T> FlagSet::get(const std::string& name) const {

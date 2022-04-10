@@ -7,20 +7,20 @@
 using namespace pnt_cli;
 using namespace std;
 
-auto someDefaultAction = [] (const Command* cmd, std::vector<std::string> args) {
+auto someDefaultAction = [] (Command const& cmd, std::vector<std::string> args) {
     return 0;
 };
 
 class CommandTest : public ::testing::Test {
     protected:
-        std::string localFlagName = "local_flag";
-        std::string localFlagDescription = "local flag description";
-        bool localFlagDefaultValue = false;
+        static const std::string localFlagName;
+        static const std::string localFlagDescription;
+        static const bool localFlagDefaultValue;
 
-        std::string persistentFlagName = "global_flag";
-        std::string persistentFlagDescription = "global flag description";
-        bool persistentFlagDefaultValue = false;
-        std::string persistentFlagShorthand = "g";
+        static const std::string persistentFlagName;
+        static const std::string persistentFlagDescription;
+        static const bool persistentFlagDefaultValue;
+        static const std::string persistentFlagShorthand;
 
         shared_ptr<Command> rootCmd;
         shared_ptr<Command> subCmd;
@@ -42,7 +42,13 @@ class CommandTest : public ::testing::Test {
             rootCmd->addSubcommand(subCmd);
         }
 };
-
+const std::string CommandTest::localFlagName = "local_flag";
+const std::string CommandTest::localFlagDescription = "local flag description";
+const bool CommandTest::localFlagDefaultValue = false;
+const std::string CommandTest::persistentFlagName = "global_flag";
+const std::string CommandTest::persistentFlagDescription = "global flag description";
+const bool CommandTest::persistentFlagDefaultValue = false;
+const std::string CommandTest::persistentFlagShorthand = "g";
 
 TEST_F(CommandTest, InitializesProperly) {
     EXPECT_FALSE(rootCmd->hasFlags());

@@ -11,7 +11,6 @@ struct Hostname {
     std::string name;
     int port;
 };
-
 template<>
 Hostname pnt_cli::fromString<Hostname>(const std::string& str) {
     auto colon_pos = str.find_first_of(':');
@@ -31,20 +30,20 @@ std::string pnt_cli::toString<Hostname>(const Hostname& val) {
 class FlagSetTest : public ::testing::Test {
     protected:
         FlagSet fs;
-        std::string intFlagName = "int_flag";
-        std::string intFlagDescription = "An integer flag";
-        int intFlagDefault = 42;
-        std::string intFlagShorthand = "i";
+        static const std::string intFlagName;
+        static const std::string intFlagDescription;
+        static const int intFlagDefault;
+        static const std::string intFlagShorthand;
         
-        std::string floatFlagName = "float_flag";
-        std::string floatFlagDescription = "A float flag";
-        float floatFlagDefault = 3.14;
-        std::string floatFlagShorthand = "f";
+        static const std::string floatFlagName;
+        static const std::string floatFlagDescription;
+        static const float floatFlagDefault;
+        static const std::string floatFlagShorthand;
 
-        std::string hostnameFlagName = "hostname_flag";
-        std::string hostnameFlagDescription = "A hostname flag";
-        Hostname hostnameFlagDefault = {"localhost", 80};
-        std::string hostnameFlagShorthand = "h";
+        static const std::string hostnameFlagName;
+        static const std::string hostnameFlagDescription;
+        static const Hostname hostnameFlagDefault;
+        static const std::string hostnameFlagShorthand;
 
         void addIntFlag() {
             fs.addFlag<int>(intFlagName, intFlagDescription, intFlagDefault, intFlagShorthand);
@@ -61,6 +60,18 @@ class FlagSetTest : public ::testing::Test {
             addHostnameFlag();
         }        
 };
+const std::string FlagSetTest::intFlagName = "int_flag";
+const std::string FlagSetTest::intFlagDescription = "An integer flag";
+const int FlagSetTest::intFlagDefault = 42;
+const std::string FlagSetTest::intFlagShorthand = "i";
+const std::string FlagSetTest::floatFlagName = "float_flag";
+const std::string FlagSetTest::floatFlagDescription = "A float flag";
+const float FlagSetTest::floatFlagDefault = 3.14;
+const std::string FlagSetTest::floatFlagShorthand = "f";
+const std::string FlagSetTest::hostnameFlagName = "hostname_flag";
+const std::string FlagSetTest::hostnameFlagDescription = "A hostname flag";
+const Hostname FlagSetTest::hostnameFlagDefault = {"localhost", 80};
+const std::string FlagSetTest::hostnameFlagShorthand = "h";
 
 TEST_F(FlagSetTest, InitializesProperly) {
     EXPECT_TRUE(fs.empty());

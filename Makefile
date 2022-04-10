@@ -9,15 +9,15 @@ INCLUDE_FLAGS=$(patsubst %, -I%, $(INCLUDE_DIRS))
 CXXFLAGS=$(INCLUDE_FLAGS) -std=c++20 -Wall -Werror
 
 TESTS=test-flag test-command
-.PHONY: all tests clean $(TESTS)
+.PHONY: all test-all clean $(TESTS)
 
 all: tests
-tests: bin/tests $(TESTS)
+test-all: bin/test-all
 test-flag: bin/test-flag
 test-command: bin/test-command
 
 
-bin/tests: build/test-command.o build/test-flag.o
+bin/test-all: build/test-command.o build/test-flag.o
 	$(CXX) $(CXXFLAGS) $^ -lgtest -lgtest_main -pthread -o $@
 bin/test-flag: build/test-flag.o
 	$(CXX) $(CXXFLAGS) $^ -lgtest -lgtest_main -pthread -o $@
