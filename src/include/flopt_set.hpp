@@ -22,19 +22,19 @@ namespace painter::cli {
         }
     }
     template<Deserializable T>
-    inline T get_flopt_value(std::shared_ptr<FlagOption> const& flopt) {
+    inline T get_flopt_value(FlagOption *flopt) {
         if constexpr (std::is_same_v<T, bool>) {
             if (!flopt->is_flag()) {
                 std::cerr << "Tried to get boolean from something other than a flag" << std::endl;
                 std::exit(1);
             }
-            return as_flag(flopt.get())->get();
+            return as_flag(flopt)->get();
         } else {
             if (!flopt->is_option()) {
                 std::cerr << "Tried to get non-boolean from something other than an option" << std::endl;
                 std::exit(1);
             }
-            return as_option(flopt.get())->template as<T>()->get();
+            return as_option(flopt)->template as<T>()->get();
         }
     }
 
@@ -121,7 +121,7 @@ namespace painter::cli {
         std::string const& shorthand
     ) {
         if (find_name(name) != nullptr) {
-            std::cerr << "Flag " << name << " already exists" << std::endl;
+            std::cerr << "Flopt " << name << " already exists" << std::endl;
             std::exit(1);
         }
         auto flopt = make_flopt<T>(name, description, default_value, shorthand);
@@ -137,14 +137,15 @@ namespace painter::cli {
             return get_flopt_value<T>(flopt);
         }
         //!Note: could straight up exit here, but may want to allow handling
-        throw std::runtime_error("Flag " + name + " does not exist");
+        throw std::runtime_error("Flopt " + name + " does not exist (while getting)");
     }
     void FloptSet::set_value(std::string const& name, std::string const& value) {
         if (auto flopt = find_name(name)) {
             flopt->set(value);
+            return;
         }
         //!Note: could straight up exit here, but may want to allow handling
-        throw std::runtime_error("Flag " + name + " does not exist");
+        throw std::runtime_error("Flopt " + name + " does not exist (while setting)");
     }
 }
 
