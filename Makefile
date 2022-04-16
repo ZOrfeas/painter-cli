@@ -8,10 +8,21 @@ INCLUDE_FLAGS=$(patsubst %, -I%, $(INCLUDE_DIRS))
 
 CXXFLAGS=$(INCLUDE_FLAGS) -std=c++20 -Wall -Werror
 
-.PHONY: all clean
+TESTS=test-option test-flag test-flopt_set
+.PHONY: all clean $(TESTS)
 
-all: test/test-drafts.cpp 
-	$(CXX) $(CXXFLAGS) -o bin/test-drafts $<
+all:
+tests: $(patsubst %,bin/%,$(TESTS)) bin/test-all
+
+bin/test-all: $(patsubst %,build/%.o,$(TESTS))
+	$(CXX) $(CXXFLAGS) $^ -lgtest -lgtest_main -o $@
+bin/test-%: build/test-%.o 
+	$(CXX) $(CXXFLAGS) $< -lgtest -lgtest_main -o $@
+
+
+build/test-%.o: test/test-%.cpp src/include/%.hpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 
 clean:
 	rm -rf bin/*
