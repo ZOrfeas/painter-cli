@@ -39,8 +39,10 @@ namespace painter::cli {
     }
 
     class FloptSet {
-        using str_flopt_map_t = std::unordered_map<std::string, std::shared_ptr<FlagOption>>;
-        using str_str_map_t = std::unordered_map<std::string, std::string>;
+        using str_flopt_map_t = 
+            std::unordered_map<std::string, std::shared_ptr<FlagOption>>;
+        using str_str_map_t = 
+            std::unordered_map<std::string, std::string>;
         private:
             str_flopt_map_t flopts_;
             str_flopt_map_t shorthand_flopts_;
@@ -50,7 +52,6 @@ namespace painter::cli {
                 std::string const&
             );
 
-            FlagOption* find_name(std::string const&) const;
             Flag* find_flag(std::string const&) const;
             Option* find_option(std::string const&) const;
         public:
@@ -68,6 +69,7 @@ namespace painter::cli {
                 std::string const& = ""
             );
 
+            FlagOption* find_name(std::string const&) const;
             template<Deserializable T> T get_value(std::string const&) const;
             void set_value(std::string const&, std::string const&);
     };

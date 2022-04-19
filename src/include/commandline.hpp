@@ -20,7 +20,7 @@ namespace painter::cli {
         public:
             CommandLine(std::string const&, Action const&);
             
-            int run(int argc, char* argv[]);
+            int run(int, char**);
             int run(std::span<char*>);
 
             CommandLine(CommandLine&&) = default;
