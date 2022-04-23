@@ -8,7 +8,7 @@ INCLUDE_FLAGS=$(patsubst %, -I%, $(INCLUDE_DIRS))
 
 CXXFLAGS=$(INCLUDE_FLAGS) -std=c++20 -Wall -Werror
 
-TESTS=test-option test-flag test-flopt_set
+TESTS=test-fsm
 .PHONY: all clean $(TESTS)
 
 all:

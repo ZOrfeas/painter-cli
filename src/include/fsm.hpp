@@ -73,8 +73,9 @@ namespace painter::utils {
             }
             constexpr
             State advance(State from, Event event) const {
+                if (!from.is_valid()) { throw invalid_argument("invalid from state"); }
                 if (!event.is_valid()) { throw invalid_argument("invalid event"); }
-                auto transition = state_transitions_[from][event];
+                Transition& transition = state_transitions_[from][event];
                 if (!transition.is_valid()) { 
                     throw invalid_argument(std::to_string(from) 
                             + " does not have a transition for event "
