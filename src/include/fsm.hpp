@@ -1,5 +1,5 @@
-#ifndef FSM_HPP_
-#define FSM_HPP_
+#ifndef STATELESS_FSM_HPP_
+#define STATELESS_FSM_HPP_
 
 #include <iostream>
 #include <array>
@@ -15,7 +15,7 @@ namespace painter::utils {
     template<
         size_t StateCnt, size_t EventCnt
     > class FSM {
-        private:
+        public:
             class State {
                 public:
                     size_t id;
@@ -43,9 +43,9 @@ namespace painter::utils {
                     constexpr bool is_null() const { return from.is_null() && to.is_null(); }
                     constexpr bool is_valid() const { return from.is_valid() && to.is_valid(); }
             };
-        public:
             constexpr static size_t state_cnt = StateCnt;
             constexpr static size_t event_cnt = EventCnt;
+            using InitType = array<pair<State, array<pair<Event, State>, EventCnt>>, StateCnt>;
         private:
             array<array<Transition, EventCnt>, StateCnt> state_transitions_;
         public:
@@ -54,7 +54,7 @@ namespace painter::utils {
 
             /** @brief Accepts an array that for each state specifies the target given an event. */
             constexpr
-            FSM(array<pair<State, array<pair<Event, State>, EventCnt>>, StateCnt> state_transitions): FSM() {
+            FSM(InitType const& state_transitions): FSM() {
                 for (auto const& [from, pairs] : state_transitions) {
                     if (from.is_null()) { break; }
                     if (!from.is_valid()) { throw invalid_argument("invalid from state"); }
@@ -75,7 +75,7 @@ namespace painter::utils {
             State advance(State from, Event event) const {
                 if (!from.is_valid()) { throw invalid_argument("invalid from state"); }
                 if (!event.is_valid()) { throw invalid_argument("invalid event"); }
-                Transition& transition = state_transitions_[from][event];
+                Transition const& transition = state_transitions_[from][event];
                 if (!transition.is_valid()) { 
                     throw invalid_argument(std::to_string(from) 
                             + " does not have a transition for event "
@@ -95,7 +95,6 @@ namespace painter::utils {
                 }
                 return os;
             }
-
             // different initialization, for each event an array of transitions
             // constexpr
             // FSM(array<pair<Event, array<Transition, StateCnt>>, EventCnt> const& event_transitions): FSM() {
@@ -113,20 +112,26 @@ namespace painter::utils {
             //         }
             //     }
             // }
-
     };
-    // namespace state {
-    //     enum states : size_t {
-    //         Start, End
-    //     };
-    // }
-    // namespace event {
-    //     enum events : size_t {
-    //         Stay, Change
-    //     };
-    // }
-
+    
 }
 
+// int main() {
+//     using StatefulFSM = painter::utils::StatefulFSM<2, 2>;
+//     using FSM = painter::utils::FSM<2, 2>;
+//     constexpr StatefulFSM theFsm(FSM({{
+//         {0, {{
+//             {0, 0},
+//             {1, 1}
+//         }}},
+//         {1, {{
+//             {0, 1},
+//             {1, 0}
+//         }}}
+//     }}));
+//     std::cout << theFsm;
+//     std::cout << theFsm.advance(0);
+// }
 
-#endif // FSM_HPP_
+
+#endif // STATELESS_FSM_HPP_
