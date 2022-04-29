@@ -1,20 +1,49 @@
 #ifndef UTILS_HPP_
 #define UTILS_HPP_
 
+#include <iostream>
+#include <string>
+#include <sstream>
 #include <algorithm>
-#include <span>
+#include <concepts>
+
+#define CONSTEXPR_AND_EXPECT_TRUE(x) \
+    static_assert((x)); EXPECT_TRUE((x))
 
 namespace painter::utils {
 
     template<typename T>
-    class cnst_shared_ptr;
+    concept Deserializable =
+        requires(std::istream& is, T& t) {
+            { is >> t } -> std::same_as<std::istream&>;
+        };
 
-    template<typename T, typename... Args>
-    constexpr
-    cnst_shared_ptr<T> make_cnst_shared(Args&&... args) {
-        return cnst_shared_ptr<T>(new T(std::forward<Args>(args)...));
-    }  
+    template<typename T>
+    concept Serializable =
+        requires(std::ostream& os, T const& t) {
+            { os << t } -> std::same_as<std::ostream&>;
+        };
 
+    template<Deserializable T>
+    T deserialize(std::string const& str) {
+        std::istringstream iss(str);
+        T t;
+        iss >> t;
+        return t;
+    }
+
+    template<Serializable T>
+    std::string serialize(T const& t) {
+        std::ostringstream oss;
+        oss << t;
+        return oss.str();
+    }
+
+    /**
+     * @brief Some shared_ptr functionality but constexpr
+     * 
+     * @tparam T the type of pointer stored
+     */
     template<typename T>
     class cnst_shared_ptr {
     private:
@@ -23,10 +52,6 @@ namespace painter::utils {
 
         constexpr
         void __cleanup_self__() {
-            // std::cout << std::boolalpha <<
-            //     "\tptr_ is nullptr " << (ptr_ == nullptr) << "\n" <<
-            //     "\tref_cnt_ is nullptr " << (ref_cnt_ == nullptr) << '\n';
-            
             if (ref_cnt_ == nullptr) {
                 return;
             }
@@ -67,7 +92,7 @@ namespace painter::utils {
         // copy assignement
         constexpr
         cnst_shared_ptr& operator=(cnst_shared_ptr<T> const& other) {
-            // std::cout << "Copy assignement\n";
+            if (this == &other) { return *this; }
             __cleanup_self__();
             init_from(other);
             return *this;
@@ -79,7 +104,7 @@ namespace painter::utils {
         }
         constexpr 
         cnst_shared_ptr& operator=(cnst_shared_ptr<T>&& dying_other) {
-            // std::cout << "Move assignement\n";
+            if (this == &dying_other) { return *this; }
             __cleanup_self__();
             steal_from(std::move(dying_other));
             return *this;
@@ -107,6 +132,11 @@ namespace painter::utils {
         }
     };
 
+    /**
+     * @brief A vector allowed in constexpr context
+     * 
+     * @tparam T the type of elements stored
+     */
     template<typename T>
     class cnst_vector {
     private:
@@ -134,7 +164,7 @@ namespace painter::utils {
         }
     public:
         constexpr cnst_vector()
-            :   data_(nullptr), capacity_(0), size_(0) {}
+            :   data_(new T[1]), capacity_(1), size_(0) {}
         constexpr cnst_vector(size_t capacity)
             :   data_(new T[capacity]), capacity_(capacity), size_(0) {}
         constexpr
@@ -174,28 +204,40 @@ namespace painter::utils {
         }
         constexpr size_t size() const { return size_; }
         constexpr size_t capacity() const { return capacity_; }
-        constexpr std::span<T> as_range() const {
-            return std::span<T>(data_, size_);
-        }
         constexpr T* data() const { return data_; }
         constexpr T& operator[](size_t idx) const {
             return data_[idx];
         }
+        constexpr void resize(size_t new_capacity) {
+            if (new_capacity == capacity_) { return; }
+            if (new_capacity < size_) {
+                size_ = new_capacity;
+                return;
+            }
+            T* new_data = new T[new_capacity];
+            std::copy(data_, data_ + size_, new_data);
+            delete[] data_;
+            data_ = new_data;
+            capacity_ = new_capacity;
+        }
         constexpr void push_back(T const& val) {
             if (size_ == capacity_) {
-                capacity_ *= 2;
-                T* new_data = new T[capacity_];
-                std::copy(data_, data_ + size_, new_data);
-                delete[] data_;
-                data_ = new_data;
-                data_[size_++] = val;
-            } else {
-                data_[size_++] = val;
+                resize(capacity_ * 2);
+            } 
+            data_[size_++] = val;
+        }
+        constexpr void push_back(T&& val) {
+            if (size_ == capacity_) {
+                resize(capacity_ * 2);
             }
+            data_[size_++] = std::move(val);
         }
         constexpr void pop_back() { --size_; }
-        constexpr void clear() { size_ = 0; }        
+        constexpr void clear() { size_ = 0; }   
+        constexpr auto begin() const { return data_; }
+        constexpr auto end() const { return data_ + size_; }
     };
+
 }
 
 

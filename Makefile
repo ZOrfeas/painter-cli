@@ -8,7 +8,7 @@ INCLUDE_FLAGS=$(patsubst %, -I%, $(INCLUDE_DIRS))
 
 CXXFLAGS=$(INCLUDE_FLAGS) -std=c++20 -Wall -Werror
 
-TESTS=test-stateless_fsm
+TESTS=test-flopt test-fsm test-command
 .PHONY: all clean $(TESTS)
 
 all:
