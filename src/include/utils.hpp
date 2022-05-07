@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <sstream>
 #include <algorithm>
 #include <concepts>
@@ -25,8 +26,8 @@ namespace painter::utils {
         };
 
     template<Deserializable T>
-    T deserialize(std::string const& str) {
-        std::istringstream iss(str);
+    T deserialize(std::string_view str) {
+        std::stringstream iss{std::string(str)};
         T t;
         iss >> t;
         return t;

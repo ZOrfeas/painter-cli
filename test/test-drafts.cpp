@@ -12,13 +12,25 @@
 using namespace std;
 
 
+template<typename T>
+struct TypeContainer {
+    using type = T;
+};
+
 // TODO: Try out the following:
 constexpr
 auto init_cli() {
-
     return 0;
 }
 
+template<typename T>
+constexpr
+auto register_type(std::string_view name) {
+    return mapbox::eternal::map({
+        {name, TypeContainer<T>{}},
+        {name, TypeContainer<bool>{}}
+    });
+}
 // template<
 //     class derived
 // > class Cli {

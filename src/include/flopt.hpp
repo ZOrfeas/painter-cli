@@ -17,13 +17,20 @@ namespace painter::cli {
         bool const is_flag;
         bool const is_option;
         
+        friend class FloptSet;
         constexpr FloptBase(
             std::string_view, std::string_view,
             std::string_view, bool
         );
-        friend class FloptSet;
         constexpr virtual ~FloptBase() = default;
+
+        /**
+         * @brief Deserializes the provided string into the memory 
+         * location provided based on the type of the instance.
+         */
+        virtual void set(void*, std::string_view) const = 0;
     };
+
 
     template<Deserializable T>
     class Flopt: public FloptBase {
@@ -35,6 +42,8 @@ namespace painter::cli {
             T const&, std::string_view = ""
         );
         constexpr ~Flopt() = default;
+
+        void set(void*, std::string_view) const override;
     };
 
     /////////////////////////////////////////////////////
@@ -62,6 +71,10 @@ namespace painter::cli {
     ): FloptBase(name, description, shorthand, std::is_same_v<T, bool>),
         value(default_value) {}
 
+    template<Deserializable T>
+    void Flopt<T>::set(void* ptr, std::string_view value) const {
+        *static_cast<T*>(ptr) = deserialize<T>(value);
+    }
 }
 
 

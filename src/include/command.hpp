@@ -12,7 +12,7 @@ namespace painter::cli {
     
     // TODO: decide what the ActionFn takes as arguments
     using ActionFn = int(*)();
-
+    
     class Command {
     private:
         static constexpr auto is_flag_fn =
@@ -27,12 +27,12 @@ namespace painter::cli {
         ) const;
         constexpr size_t persistent_flag_cnt() const;
         constexpr size_t persistent_option_cnt() const;
-        constexpr bool flag_conflicts(
+        constexpr bool flag_has_conflict(
             std::string_view,
             std::string_view
         ) const;
         constexpr
-        bool cmd_name_conflicts(std::string_view) const;
+        bool cmd_name_has_conflict(std::string_view) const;
 
     public:
         std::string_view name;
@@ -50,6 +50,12 @@ namespace painter::cli {
             ActionFn action,
             Command* parent = nullptr
         );
+        // TODO: add constructors to simplify the definition of a 
+        // TODO:    cli in a single step.
+        //!NOTE: through the constructor/add_flopt functions, we can keep
+        //!NOTE:    count of how many flopts of each type exist me thinks.
+        //!NOTE: maybe we can allow the user to allocate space for these and
+        //!NOTE:    provide it.
         constexpr ~Command();
         constexpr size_t flag_cnt() const;
         constexpr size_t option_cnt() const;
@@ -92,7 +98,7 @@ namespace painter::cli {
             delete subcommand;
         }
     }
-    constexpr inline bool Command::flag_conflicts(
+    constexpr inline bool Command::flag_has_conflict(
         std::string_view other_name,
         std::string_view other_shorthand
     ) const {
@@ -178,7 +184,7 @@ namespace painter::cli {
                 persistent_option_cnt();
     }
 
-    constexpr inline bool Command::cmd_name_conflicts(
+    constexpr inline bool Command::cmd_name_has_conflict(
         std::string_view other_name
     ) const {
         return other_name == name ||
@@ -192,7 +198,7 @@ namespace painter::cli {
     constexpr inline bool Command::add_subcommand(
         Command* subcommand
     ) {
-        if (cmd_name_conflicts(subcommand->name)) {
+        if (cmd_name_has_conflict(subcommand->name)) {
             return false;
         }
         subcommand->parent = this;

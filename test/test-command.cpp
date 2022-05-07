@@ -30,6 +30,7 @@ protected:
             d.sub_name, d.sub_description, d.action
         );
     }
+    
     static constexpr auto initializes_properly() {
         auto root = single_root();
         return root.name == d.name &&
